@@ -1,0 +1,33 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.so
+venv/
+env/
+.env
+.venv/
+
+# Training data (too large for git)
+data/
+*.h5
+*.keras
+*.pkl
+model/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
