@@ -12,19 +12,39 @@ STEERING_OFFSET = 0.2
 
 def load_log(data_dir):
     """Parse driving_log.csv — returns parallel arrays of image paths and steering angles.
-    Uses all 3 cameras (centre, left, right) with a steering correction on left/right."""
+    Uses all 3 cameras (centre, left, right) with a steering correction on left/right.
+    Handles both header and no-header CSV formats."""
     imgs = []
     angles = []
+    img_dir = os.path.join(data_dir, 'IMG')
 
     csv_path = os.path.join(data_dir, 'driving_log.csv')
     with open(csv_path) as f:
-        for row in csv.reader(f):
+        reader = csv.reader(f)
+        first_row = next(reader)
+        # check if first row is a header
+        try:
+            float(first_row[3])
+            rows = [first_row]
+        except ValueError:
+            rows = []
+
+        for row in reader:
+            rows.append(row)
+
+        for row in rows:
             if len(row) < 4:
                 continue
             angle = float(row[3])
             centre = row[0].strip()
             left   = row[1].strip()
             right  = row[2].strip()
+
+            # handle both full paths and just filenames
+            if not os.path.isabs(centre) and not os.path.exists(os.path.join(data_dir, centre)):
+                centre = os.path.join('IMG', centre)
+                left   = os.path.join('IMG', left)
+                right  = os.path.join('IMG', right)
 
             imgs   += [os.path.join(data_dir, centre),
                        os.path.join(data_dir, left),

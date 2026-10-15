@@ -18,6 +18,7 @@ import socketio
 from flask import Flask
 from PIL import Image
 from keras.models import load_model
+import keras
 
 from utils import preprocess
 
@@ -71,6 +72,7 @@ if __name__ == '__main__':
     ap.add_argument('model_path', help='path to .keras model')
     args = ap.parse_args()
 
+    keras.config.enable_unsafe_deserialization()
     model = load_model(args.model_path)
     print(f'loaded {args.model_path}')
 

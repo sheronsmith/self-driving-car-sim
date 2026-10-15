@@ -1,36 +1,40 @@
 # self-driving-car-sim
 
-so basically what this is — i taught a car to drive itself in a simulator. you drive around a track, the simulator records your camera footage and steering, then you train a neural network to copy you. picture goes in, steering angle comes out. thats it. its called behavioral cloning.
+i made a car that drives itself in a video game. for real.
 
-the model is based on nvidia's 2016 paper ["End to End Learning for Self-Driving Cars"](https://arxiv.org/abs/1604.07316) by Bojarski et al. one network, raw camera pixels straight to steering. no hand-built lane detector or anything like that.
+heres how it works — you drive a car around a track in a simulator (like a racing game). while you drive, the game saves pictures from the car's camera and remembers which way you turned the wheel. then you give all of that to a computer program called a neural network. the program looks at all the pictures and all the turns you made, and it learns the pattern. after that, it can look at a new picture and go "oh i should turn left here" all by itself.
 
-## how it works
+this is called **behavioral cloning** — the computer copies how you drive by watching you do it.
 
-1. **a picture is just numbers.** every pixel is 3 numbers (red, green, blue). crop off the sky and the hood, resize to 66x200, and each frame is 39,600 numbers. thats all the computer sees — it has no idea what a "road" is
+the brain of the car is based on a design from nvidia (the gpu company). they wrote a paper about it in 2016 called ["End to End Learning for Self-Driving Cars"](https://arxiv.org/abs/1604.07316). basically one program looks at the camera and tells the car where to steer. no extra steps. no cheat codes. just pictures in, steering out.
 
-2. **every picture gets a label.** the sim saves each frame next to your steering angle in `driving_log.csv`. steering goes from -1 (hard left) to +1 (hard right)
+## how the car learns
 
-3. **the network takes a guess.** 5 convolutional layers and 3 dense layers, about 250k weights. a convolutional layer slides a small filter across the image and learns to pick up edges, curves, lane lines — all on its own
+1. **pictures are just numbers.** every dot in a picture (called a pixel) has 3 numbers — how red, green, and blue it is. we chop off the sky and the hood of the car, shrink what's left to a small size, and now the computer has a bunch of numbers to work with
 
-4. **measure the miss.** mean squared error between what the model guessed and what you actually steered. squaring it makes big misses hurt way more than small ones
+2. **every picture has a right answer.** the game saves what you did with the steering wheel for each picture. thats the answer the computer is trying to match
 
-5. **nudge the weights and repeat.** gradient descent figures out which way to push each weight to shrink the loss, then moves it a little. one full pass through the data = one epoch. do that a bunch of times and the model gets good
+3. **the computer takes a guess.** it has a bunch of numbers inside it called weights. it multiplies the picture numbers by the weights, adds stuff up through a bunch of layers, and one number pops out at the end — thats its guess for the steering
+
+4. **we check how wrong it was.** if you turned left but it said go right, thats a big miss. we measure the miss with something called mean squared error — basically we square the difference so big mistakes count way more than little ones
+
+5. **fix the weights and try again.** the computer figures out which weights need to go up and which need to go down to make the guess better. it does this over and over, thousands of times, getting a little better each round. one full pass through all the pictures is called an epoch
 
 ## whats in here
 
 ```
-├── model.py        # nvidia's architecture in keras
-├── utils.py        # data loading, preprocessing, augmentation
-├── train.py        # training script
-├── drive.py        # autonomous mode — talks to the simulator
-├── track.py        # generates a practice course with synthetic data
+├── model.py        # the car's brain — nvidia's design in keras
+├── utils.py        # loads pictures, crops them, adds variety
+├── train.py        # teaches the brain using the driving data
+├── drive.py        # connects the brain to the simulator
+├── track.py        # makes a practice course if you dont have the sim
 ├── requirements.txt
 └── README.md
 ```
 
-## getting started
+## how to use it
 
-### 1. install stuff
+### 1. install the stuff you need
 
 ```bash
 pip install -r requirements.txt
@@ -38,83 +42,83 @@ pip install -r requirements.txt
 
 ### 2. get the simulator
 
-grab the [Udacity self-driving car simulator](https://github.com/udacity/self-driving-car-sim/releases) — pick the one for your OS, unzip, run it.
+download the [Udacity self-driving car simulator](https://github.com/udacity/self-driving-car-sim/releases). pick the one for your computer (windows, mac, or linux), unzip it, and open it up.
 
-heads up tho — this thing is from 2017 so it might act weird on newer systems. if it wont start check the github issues or just use the [Donkey Car simulator](https://docs.donkeycar.com/guide/deep_learning/simulator/) instead, its free
+its from 2017 so it might be a little weird on new computers. if it wont open, try the [Donkey Car simulator](https://docs.donkeycar.com/guide/deep_learning/simulator/) instead — its free too
 
-### 3. generate a practice course (no simulator needed)
+### 3. make a practice course (if you dont have the simulator)
 
-if you just wanna test the pipeline or dont have the sim running yet, you can generate synthetic training data:
+you can make fake driving data to test things out:
 
 ```bash
 python track.py --samples 3000
 ```
 
-this creates a `data/` folder with fake camera frames (simple road scenes with lane lines) and a `driving_log.csv`. the images are basic but they work for making sure everything runs end to end
+this makes a `data/` folder with simple road pictures and a file that says what the steering should be. its not as good as real data but it works for testing
 
-### 4. record real driving data
+### 4. drive around and record it
 
-- open the sim → **Training Mode**
-- hit record, pick a folder, drive a few smooth laps
-- also record yourself steering back from the edges — recovery maneuvers — or the car never learns what to do when it drifts
-- youll get an `IMG/` folder and `driving_log.csv`
-- drop them in a `data/` directory here
+- open the simulator and pick **Training Mode**
+- hit record, pick a folder, and drive some laps
+- try to drive smooth — no crazy swerving
+- also practice steering back from the edges so the car learns what to do if it drifts
+- youll get a folder called `IMG/` with pictures and a file called `driving_log.csv`
+- put them in a `data/` folder in this project
 
-### 5. train it
+### 5. teach the car
 
 ```bash
 python train.py --data_dir data/ --epochs 10
 ```
 
-saves `model.keras` and a `loss.png` so you can see if its learning or just memorizing
+this trains the brain and saves it as `model.keras`. it also makes a picture called `loss.png` that shows how well the car is learning
 
-### 6. let it drive
+### 6. watch it drive
 
-- open the sim → **Autonomous Mode**
-- run:
+- open the simulator and pick **Autonomous Mode**
+- then run:
 
 ```bash
 python drive.py model.keras
 ```
 
-connects to the sim on port 4567, gets camera frames, sends back steering. pretty cool to watch honestly
+the program connects to the game and starts driving the car using what it learned. pretty cool to watch
 
-### 7. fix it
+### 7. keep fixing it
 
-it WILL leave the road somewhere. record more data at that spot, retrain, repeat. thats most of the work and honestly the fun part
+the car is gonna mess up somewhere. thats normal. go record more driving at the spot where it messed up, train it again, and try again. this back-and-forth is most of the project honestly
 
-## data augmentation
+## tricks to make it better
 
-without this the model just learns to say "go straight" because most of the training data is straight roads:
+the car sees mostly straight road when you drive, so without some tricks it just learns to go straight. here's what helps:
 
-- **left/right cameras** with a ±0.2 steering offset — simulates recovery
-- **random horizontal flips** with flipped steering — doubles the data
-- **random brightness** — simulates different lighting
+- **use all 3 cameras** — the sim gives you center, left, and right camera views. the side cameras teach the car how to steer back to the middle
+- **flip pictures sideways** — if you flip a left turn picture, it becomes a right turn. boom, double the data
+- **change the brightness** — makes the car handle different lighting
 
 ## how you know its working
 
-- **loss plot** — validation loss should go down with training loss. if training goes down but validation goes up thats overfitting
-- **the real test** — can the car do a full lap without leaving the road?
-- **nvidia's metric** — `autonomy = (1 - interventions × 6s / lap_time) × 100%`
+- look at `loss.png` — both lines should go down. if the orange one (training) goes down but the blue one (validation) goes up, thats bad — the car is memorizing instead of learning
+- the real test — can the car do a whole lap without driving off the road?
 
-## common issues
+## if something goes wrong
 
-| problem | whats probably wrong |
+| whats happening | what to do |
 |---|---|
-| sim wont start | its old. check github issues or use donkey car |
-| car swerves immediately | `drive.py` isnt doing the same crop + resize as training |
-| model just predicts ~0 | not enough augmentation. most data is straight driving |
-| validation loss going up | overfitting — add dropout, more data, fewer epochs |
+| simulator wont open | its old. check github issues or use donkey car instead |
+| car goes crazy right away | make sure `drive.py` crops the picture the same way as training |
+| car only goes straight | need more turning data — flip images and use all 3 cameras |
+| it was learning but now its getting worse | thats overfitting — try fewer epochs or add more data |
 
-## references
+## stuff i learned from
 
-- [3Blue1Brown: "But what is a neural network?"](https://www.youtube.com/watch?v=aircAruvnKk) — best intro out there
-- [Nvidia's blog post](https://developer.nvidia.com/blog/deep-learning-self-driving-cars/) — plain english version
-- [Nvidia's paper](https://arxiv.org/abs/1604.07316) — the full architecture
-- [Udacity Behavioral Cloning project](https://github.com/udacity/CarND-Behavioral-Cloning-P3) — the original task
-- [naokishibuya/car-behavioral-cloning](https://github.com/naokishibuya/car-behavioral-cloning) — cleanest full example
-- [Keras docs](https://keras.io/getting_started/intro_to_keras_for_engineers/) — for writing the model
-- [Donkey Car sim](https://docs.donkeycar.com/guide/deep_learning/simulator/) — free alternative
+- [3Blue1Brown: "But what is a neural network?"](https://www.youtube.com/watch?v=aircAruvnKk) — best video to understand this stuff
+- [Nvidia's blog post](https://developer.nvidia.com/blog/deep-learning-self-driving-cars/) — explains it in normal words
+- [Nvidia's paper](https://arxiv.org/abs/1604.07316) — the full thing if you want all the details
+- [Udacity Behavioral Cloning project](https://github.com/udacity/CarND-Behavioral-Cloning-P3) — where the idea came from
+- [naokishibuya/car-behavioral-cloning](https://github.com/naokishibuya/car-behavioral-cloning) — the cleanest example i found
+- [Keras docs](https://keras.io/getting_started/intro_to_keras_for_engineers/) — for writing the brain
+- [Donkey Car sim](https://docs.donkeycar.com/guide/deep_learning/simulator/) — free backup simulator
 
 ## built by
 
